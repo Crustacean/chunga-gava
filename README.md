@@ -4,7 +4,7 @@ A geo-fenced (Kenya) civic transparency & accountability platform: policy Q&A ov
 (RAG), an interactive map to scrutinize Governors/MCAs and rate public services, SMS Q&A, and an admin
 CMS for knowledge base, map data, and automated report dispatch.
 
-## Architecture
+## Architecture (full)
 
 - **Frontend** (`frontend/`): Next.js (App Router) + TailwindCSS + `@react-google-maps/api`.
 - **Backend** (`backend/`): FastAPI, SQLAlchemy, GeoAlchemy2 (PostGIS), `pgvector`, OpenAI (RAG + summaries).
