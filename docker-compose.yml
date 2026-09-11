@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: postgres/Dockerfile
+    container_name: chungagava-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chungagava}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chungagava}
+      POSTGRES_DB: ${POSTGRES_DB:-chungagava}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chungagava}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: chungagava-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chungagava}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chungagava123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  backend:
+    build: ./backend
+    container_name: chungagava-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-chungagava}:${POSTGRES_PASSWORD:-chungagava}@postgres:5432/${POSTGRES_DB:-chungagava}
+      S3_ENDPOINT_URL: http://minio:9000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+    container_name: chungagava-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  minio-data:

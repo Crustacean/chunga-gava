@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+/* Dark Mode toggle and Language Selector must be pixel-identical circles (same class). */
+.cg-header-circle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* Header search box: a translucent 5px ring while idle; the same ring rotates through a
+   color-matrix glow (adapted from /home/embiti/rentorbit's orbit-search-border effect)
+   while the AI is processing. It's one always-present, absolutely-positioned pseudo-element
+   extending outward from the box (never a real `border`/`outline`), so toggling its
+   background/animation never changes the search field's box model or position. */
+.cg-search-shell {
+  position: relative;
+}
+
+@property --cg-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.cg-search-shell::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 5px;
+  background: rgba(17, 24, 39, 0.12);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.cg-search-shell.cg-search-glow::before {
+  background: conic-gradient(
+    from var(--cg-glow-angle),
+    #efbf04 0deg,
+    #4391f5 90deg,
+    #10b981 180deg,
+    #8b5cf6 270deg,
+    #efbf04 360deg
+  );
+  animation: cg-glow-rotate 1.4s linear infinite;
+}
+
+@keyframes cg-glow-rotate {
+  to {
+    --cg-glow-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-search-shell.cg-search-glow::before {
+    animation: none;
+  }
+}

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chungagava-config
+  namespace: chungagava
+data:
+  GEOFENCE_COUNTRY: "Kenya"
+  GEOFENCE_MIN_LAT: "-4.9"
+  GEOFENCE_MAX_LAT: "5.1"
+  GEOFENCE_MIN_LNG: "33.5"
+  GEOFENCE_MAX_LNG: "41.9"
+  OPENAI_CHAT_MODEL: "gpt-4o-mini"
+  OPENAI_EMBEDDING_MODEL: "text-embedding-3-small"
+  SMS_PROVIDER: "africastalking"
+  POSTGRES_DB: "chungagava"
+  POSTGRES_USER: "chungagava"
+  S3_ENDPOINT_URL: "http://minio:9000"
+  S3_BUCKET: "chungagava-uploads"
+  S3_REGION: "us-east-1"
+  # Comma-separated list - include every origin the frontend is actually served from
+  # (localhost for port-forward/tunnel, the minikube node IP for direct NodePort access).
+  FRONTEND_ORIGIN: "http://localhost:30300,http://192.168.49.2:30300"
