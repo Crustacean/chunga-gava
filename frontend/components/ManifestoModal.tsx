@@ -109,7 +109,10 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
             </div>
           </div>
           <form method="dialog">
-            <button aria-label="Close" className="text-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <button
+              aria-label="Close"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-black/5 text-xl leading-none text-gray-400 transition-colors hover:bg-black/10 hover:text-gray-700 dark:bg-white/10 dark:hover:bg-white/20 dark:hover:text-gray-200"
+            >
               &times;
             </button>
           </form>
