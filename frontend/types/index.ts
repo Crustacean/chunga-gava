@@ -26,6 +26,13 @@ export interface VoteStatus {
   voted: boolean;
 }
 
+export interface PeerOfficial {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  approval_pct: number;
+}
+
 export interface OfficialInsights {
   ai_summary: string;
   approval_pct: number;
@@ -36,6 +43,9 @@ export interface OfficialInsights {
   county_budget_allocated: number;
   county_budget_spent: number;
   county_expenditure_pct: number;
+  benchmark_label: string;
+  benchmark_approval_pct: number;
+  comparison_official: PeerOfficial | null;
 }
 
 export interface Amenity {

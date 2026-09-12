@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import StackedApprovalBar from "@/components/StackedApprovalBar";
 import BudgetDonutChart from "@/components/BudgetDonutChart";
+import PeerComparisonBar from "@/components/PeerComparisonBar";
 import RatingForm from "@/components/RatingForm";
 import { api } from "@/lib/api";
 import { resolveAvatarSrc } from "@/lib/avatar";
+import { formatVoteCount } from "@/lib/format";
 import { useVotesCache } from "@/lib/votesCache";
 import type { Official, OfficialInsights } from "@/types";
 
@@ -118,18 +120,78 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
             <div className="mb-4 space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
               <p className="text-sm text-gray-700 dark:text-gray-300">{insights.ai_summary}</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-center">
-                <StackedApprovalBar
-                  approvalPct={insights.approval_pct}
-                  disapprovalPct={insights.disapproval_pct}
-                  approvalCount={insights.approval_count}
-                  disapprovalCount={insights.disapproval_count}
-                />
+                <div>
+                  <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Approval ({Math.round(insights.approval_pct)}%, {formatVoteCount(insights.total_ratings)} votes)
+                  </p>
+                  <StackedApprovalBar
+                    approvalPct={insights.approval_pct}
+                    disapprovalPct={insights.disapproval_pct}
+                    approvalCount={insights.approval_count}
+                    disapprovalCount={insights.disapproval_count}
+                  />
+                </div>
                 <BudgetDonutChart
                   totalAllocated={insights.county_budget_allocated}
                   totalSpent={insights.county_budget_spent}
                   expenditurePct={insights.county_expenditure_pct}
                 />
               </div>
+
+              {official.role === "governor" ? (
+                <PeerComparisonBar
+                  label={`${insights.benchmark_label} Rank`}
+                  nodes={[
+                    {
+                      id: official.id,
+                      name: official.name,
+                      photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                      percentage: insights.approval_pct,
+                      ringColorClass: "border-blue-600",
+                    },
+                  ]}
+                />
+              ) : (
+                <>
+                  <PeerComparisonBar
+                    label="County MCA Rank"
+                    nodes={[
+                      {
+                        id: official.id,
+                        name: official.name,
+                        photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                        percentage: insights.approval_pct,
+                        ringColorClass: "border-gray-900 dark:border-gray-200",
+                      },
+                    ]}
+                  />
+                  {insights.comparison_official && (
+                    <PeerComparisonBar
+                      label={`vs. ${insights.comparison_official.name} (Governor)`}
+                      nodes={[
+                        {
+                          id: official.id,
+                          name: official.name,
+                          photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                          percentage: insights.approval_pct,
+                          ringColorClass: "border-gray-900 dark:border-gray-200",
+                        },
+                        {
+                          id: insights.comparison_official.id,
+                          name: insights.comparison_official.name,
+                          photoSrc: resolveAvatarSrc(
+                            insights.comparison_official.name,
+                            insights.comparison_official.photo_url,
+                            64
+                          ),
+                          percentage: insights.comparison_official.approval_pct,
+                          ringColorClass: "border-blue-600",
+                        },
+                      ]}
+                    />
+                  )}
+                </>
+              )}
             </div>
           ) : (
             // Gate already unlocked (instant, from the optimistic cache write) - this only ever
