@@ -18,6 +18,7 @@ from app.routers import (
     reports,
     service_classes,
     sms,
+    votes,
 )
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -53,6 +54,7 @@ app.include_router(reports.router)
 app.include_router(service_classes.router)
 app.include_router(counties.router)
 app.include_router(expenditure.router)
+app.include_router(votes.router)
 
 
 @app.get("/api/health")

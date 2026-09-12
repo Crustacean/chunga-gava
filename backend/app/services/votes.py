@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.enums import ReportFrequency
+from app.models.officials import ManifestoItem, Official
 from app.models.votes import Vote
 from app.utils.cycles import current_epoch_start
 
@@ -16,6 +17,10 @@ FREQUENCY_PHRASE = {
     ReportFrequency.MONTHLY: "this month",
     ReportFrequency.QUARTERLY: "this quarter",
 }
+
+# Amenities and expenditure projects don't have an admin-configured dispatch frequency, so
+# their votes cycle monthly - mirrors AMENITY_CYCLE_FREQUENCY in routers/ratings.py.
+_DEFAULT_TARGET_FREQUENCY = ReportFrequency.MONTHLY
 
 
 def has_voted(
@@ -60,3 +65,42 @@ def register_vote_or_409(
         period = FREQUENCY_PHRASE.get(frequency, "this cycle")
         raise HTTPException(status_code=409, detail=f"You have a recorded vote for {label} {period}.")
     db.add(Vote(fingerprint_hash=fingerprint_hash, target_id=target_id, rating_type=rating_type))
+
+
+def list_active_votes(db: Session, fingerprint_hash: str) -> list[Vote]:
+    """All of this fingerprint's votes that are still within their own target's active epoch
+    (i.e. would currently block a re-vote). Used to eagerly warm the frontend's anti-bias gate
+    cache once at app boot, instead of each leader card checking vote-status on open."""
+    votes = db.query(Vote).filter(Vote.fingerprint_hash == fingerprint_hash).all()
+    if not votes:
+        return []
+
+    official_ids = {v.target_id for v in votes if v.rating_type == "official"}
+    manifesto_ids = {v.target_id for v in votes if v.rating_type == "manifesto"}
+
+    frequency_by_official_id: dict[int, ReportFrequency] = {}
+    if official_ids:
+        frequency_by_official_id = dict(
+            db.query(Official.id, Official.report_frequency).filter(Official.id.in_(official_ids)).all()
+        )
+
+    frequency_by_manifesto_id: dict[int, ReportFrequency] = {}
+    if manifesto_ids:
+        frequency_by_manifesto_id = dict(
+            db.query(ManifestoItem.id, Official.report_frequency)
+            .join(Official, Official.id == ManifestoItem.official_id)
+            .filter(ManifestoItem.id.in_(manifesto_ids))
+            .all()
+        )
+
+    active = []
+    for vote in votes:
+        if vote.rating_type == "official":
+            frequency = frequency_by_official_id.get(vote.target_id, ReportFrequency.WEEKLY)
+        elif vote.rating_type == "manifesto":
+            frequency = frequency_by_manifesto_id.get(vote.target_id, ReportFrequency.WEEKLY)
+        else:
+            frequency = _DEFAULT_TARGET_FREQUENCY
+        if vote.created_at >= current_epoch_start(frequency):
+            active.append(vote)
+    return active

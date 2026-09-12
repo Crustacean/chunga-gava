@@ -154,9 +154,11 @@ export default function MapView() {
     setSelectedOfficial(official);
   }, []);
 
-  // Pushes the county Governor's leader card onto the modal stack in-place, over the
-  // currently open Expenditure card - no map pan/zoom/layer change, and the Expenditure card
-  // is restored (not lost) when the leader card's X is closed.
+  // Pushes the county Governor's leader card onto the modal stack as an overlay directly on
+  // top of the still-open, still-mounted Expenditure card - no map pan/zoom/layer change, and
+  // (critically) selectedProjectId/projectDetail are left untouched so there's nothing to
+  // re-fetch when popping back: the underlying <dialog> was never closed or unmounted, only
+  // visually covered by the leader dialog stacking above it in the browser's native top layer.
   const handleViewOwner = useCallback(
     (project: ExpenditureProject) => {
       const governor = officials.find((o) => o.role === "governor" && o.county === project.county);
@@ -164,17 +166,16 @@ export default function MapView() {
       setViewingOwnerOfProjectId(project.id);
       setReviewAnchor(null);
       setSelectedOfficial(governor);
-      setSelectedProjectId(null);
     },
     [officials]
   );
 
   const handleCloseLeaderCard = useCallback(() => {
     if (viewingOwnerOfProjectId != null) {
-      const returnToProjectId = viewingOwnerOfProjectId;
+      // Just pop the overlay - selectedProjectId/projectDetail were never changed, so the
+      // Expenditure dialog underneath is already showing, instantly, with no re-fetch.
       setSelectedOfficial(null);
       setViewingOwnerOfProjectId(null);
-      setSelectedProjectId(returnToProjectId);
       return;
     }
     setSelectedOfficial(null);

@@ -6,8 +6,8 @@ import BudgetDonutChart from "@/components/BudgetDonutChart";
 import RatingForm from "@/components/RatingForm";
 import { api } from "@/lib/api";
 import { resolveAvatarSrc } from "@/lib/avatar";
-import { getFingerprintHash } from "@/lib/fingerprint";
-import type { Official, OfficialInsights, VoteStatus } from "@/types";
+import { useVotesCache } from "@/lib/votesCache";
+import type { Official, OfficialInsights } from "@/types";
 
 interface ManifestoModalProps {
   official: Official | null;
@@ -21,10 +21,11 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
   const dialogRef = useRef<HTMLDialogElement>(null);
   const overallRatingRef = useRef<HTMLDivElement>(null);
   const [activeItemId, setActiveItemId] = useState<number | null>(null);
-  const [voteStatus, setVoteStatus] = useState<VoteStatus | null>(null);
   const [insights, setInsights] = useState<OfficialInsights | null>(null);
   const [showVotePrompt, setShowVotePrompt] = useState(false);
   const [focusSignal, setFocusSignal] = useState(0);
+  const { hasVoted, markVoted } = useVotesCache();
+  const voted = official ? hasVoted("official", official.id) : false;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -55,34 +56,21 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
     }
   }, [official, anchor]);
 
-  // Anti-bias rating gate: check this device's fingerprint vote status for the official's
-  // "overall" score whenever a new leader pop-up opens.
+  // Anti-bias rating gate: whether this device's fingerprint has already voted this official's
+  // "overall" score is read straight from the app-boot-warmed cache (see lib/votesCache.tsx) -
+  // instant, no per-open network round trip or loading flash.
   useEffect(() => {
-    setVoteStatus(null);
     setInsights(null);
     setShowVotePrompt(false);
-    if (!official) return;
-    let cancelled = false;
-    getFingerprintHash()
-      .then((hash) => api.get<VoteStatus>(`/api/officials/${official.id}/vote-status?fingerprint_hash=${hash}`))
-      .then((status) => {
-        if (!cancelled) setVoteStatus(status);
-      })
-      .catch(() => {
-        if (!cancelled) setVoteStatus({ voted: false });
-      });
-    return () => {
-      cancelled = true;
-    };
   }, [official]);
 
   useEffect(() => {
-    if (!official || !voteStatus?.voted) return;
+    if (!official || !voted) return;
     api
       .get<OfficialInsights>(`/api/officials/${official.id}/insights`)
       .then(setInsights)
       .catch(() => setInsights(null));
-  }, [official, voteStatus]);
+  }, [official, voted]);
 
   function handleViewRatingClick() {
     setShowVotePrompt(true);
@@ -125,24 +113,33 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
           </form>
         </div>
 
-        {voteStatus?.voted && insights ? (
-          <div className="mb-4 space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
-            <p className="text-sm text-gray-700 dark:text-gray-300">{insights.ai_summary}</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-center">
-              <StackedApprovalBar
-                approvalPct={insights.approval_pct}
-                disapprovalPct={insights.disapproval_pct}
-                approvalCount={insights.approval_count}
-                disapprovalCount={insights.disapproval_count}
-              />
-              <BudgetDonutChart
-                totalAllocated={insights.county_budget_allocated}
-                totalSpent={insights.county_budget_spent}
-                expenditurePct={insights.county_expenditure_pct}
-              />
+        {voted ? (
+          insights ? (
+            <div className="mb-4 space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300">{insights.ai_summary}</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-center">
+                <StackedApprovalBar
+                  approvalPct={insights.approval_pct}
+                  disapprovalPct={insights.disapproval_pct}
+                  approvalCount={insights.approval_count}
+                  disapprovalCount={insights.disapproval_count}
+                />
+                <BudgetDonutChart
+                  totalAllocated={insights.county_budget_allocated}
+                  totalSpent={insights.county_budget_spent}
+                  expenditurePct={insights.county_expenditure_pct}
+                />
+              </div>
             </div>
-          </div>
-        ) : voteStatus && !voteStatus.voted ? (
+          ) : (
+            // Gate already unlocked (instant, from the optimistic cache write) - this only ever
+            // shows for the brief moment while the real insights content is still loading, never
+            // a flash back to the "unvoted" link below.
+            <div className="mb-4 animate-pulse rounded-md border border-gray-200 p-3 text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+              Loading your insights…
+            </div>
+          )
+        ) : (
           <button
             type="button"
             onClick={handleViewRatingClick}
@@ -150,7 +147,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
           >
             View {firstName}&apos;s rating 🙈
           </button>
-        ) : null}
+        )}
 
         <h3 className="mb-2 font-semibold">Manifesto</h3>
         {official.manifesto_items.length === 0 && (
@@ -185,7 +182,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
 
         <h3 className="mb-2 mt-4 font-semibold">Rate {official.name} overall</h3>
         <div ref={overallRatingRef}>
-          {showVotePrompt && !voteStatus?.voted && (
+          {showVotePrompt && !voted && (
             <p className="mb-2 rounded-md bg-kenya-green/10 p-2 text-xs font-medium text-kenya-green">
               Cast your vote below to unlock {firstName}&apos;s rating insights.
             </p>
@@ -194,7 +191,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
             targetType="official"
             targetId={official.id}
             focusSignal={focusSignal}
-            onSubmitted={() => setVoteStatus({ voted: true })}
+            onSubmitted={() => markVoted("official", official.id)}
           />
         </div>
       </div>
