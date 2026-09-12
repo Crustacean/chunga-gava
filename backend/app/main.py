@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -21,6 +22,10 @@ from app.routers import (
     votes,
 )
 from app.services.scheduler import start_scheduler, stop_scheduler
+
+# Without this, the root logger defaults to WARNING and app-level logger.info(...) calls (e.g.
+# the SMS gateway's dev-mode "would have sent" log) are silently dropped from `kubectl logs`.
+logging.basicConfig(level=logging.INFO)
 
 settings = get_settings()
 
