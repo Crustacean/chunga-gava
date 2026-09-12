@@ -31,8 +31,9 @@ function pointAt(t: number, cx: number, cy: number, r: number): [number, number]
   return [cx + r * Math.sin(theta), cy - r * Math.cos(theta)];
 }
 
-/** Anti-clockwise-filling county budget donut. The ring visually caps at a full circle, but
- * the center label supports (and animates to) expenditure values over 100%. */
+/** Anti-clockwise-depleting county budget donut: starts as a full colored ring (100% remaining)
+ * and shrinks from 12 o'clock as spend eats into the budget. The ring visually caps at a full
+ * circle, but the center label supports (and animates to) expenditure values over 100%. */
 export default function BudgetDonutChart({ totalAllocated, totalSpent, expenditurePct, size = 140 }: BudgetDonutChartProps) {
   const [animatedPct, setAnimatedPct] = useState(0);
 
@@ -55,9 +56,14 @@ export default function BudgetDonutChart({ totalAllocated, totalSpent, expenditu
   const cx = size / 2;
   const cy = size / 2;
   const color = colorForExpenditure(expenditurePct);
-  const isFull = fraction >= 1;
-  const [ex, ey] = pointAt(-fraction, cx, cy, r);
-  const largeArc = fraction > 0.5 ? 1 : 0;
+  // Depletion model: the colored arc represents *remaining* budget and starts as a full ring
+  // (100% remaining) at 12 o'clock, shrinking anti-clockwise as spend eats into it - the always
+  // -present base ring is what's left showing through as a systemGray trail behind it.
+  const remaining = 1 - fraction;
+  const isFullyRemaining = remaining >= 1;
+  const isFullyDepleted = remaining <= 0;
+  const [ex, ey] = pointAt(remaining, cx, cy, r);
+  const largeArc = remaining > 0.5 ? 1 : 0;
 
   return (
     <div className="flex flex-col items-center">
@@ -71,11 +77,11 @@ export default function BudgetDonutChart({ totalAllocated, totalSpent, expenditu
           strokeWidth={10}
           className="text-gray-200 dark:text-gray-700"
         />
-        {isFull ? (
+        {isFullyRemaining ? (
           <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={10} />
-        ) : fraction > 0 ? (
+        ) : !isFullyDepleted ? (
           <path
-            d={`M ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 0 ${ex} ${ey}`}
+            d={`M ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}`}
             fill="none"
             stroke={color}
             strokeWidth={10}

@@ -150,7 +150,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
                       name: official.name,
                       photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
                       percentage: insights.approval_pct,
-                      ringColorClass: "border-blue-600",
+                      ringColorClass: "ring-blue-600",
                     },
                   ]}
                 />
@@ -164,7 +164,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
                         name: official.name,
                         photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
                         percentage: insights.approval_pct,
-                        ringColorClass: "border-gray-900 dark:border-gray-200",
+                        ringColorClass: "ring-gray-900 dark:ring-gray-200",
                       },
                     ]}
                   />
@@ -177,7 +177,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
                           name: official.name,
                           photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
                           percentage: insights.approval_pct,
-                          ringColorClass: "border-gray-900 dark:border-gray-200",
+                          ringColorClass: "ring-gray-900 dark:ring-gray-200",
                         },
                         {
                           id: insights.comparison_official.id,
@@ -188,7 +188,7 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
                             64
                           ),
                           percentage: insights.comparison_official.approval_pct,
-                          ringColorClass: "border-blue-600",
+                          ringColorClass: "ring-blue-600",
                         },
                       ]}
                     />
