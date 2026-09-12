@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Apple HIG system color tokens - used for approval/disapproval bars, the county budget donut
+   chart, and severity indicators. Values swap automatically with dark mode since `.dark` is
+   toggled on <html> (see lib/theme.tsx). */
+:root {
+  --color-system-green: #34c759;
+  --color-system-red: #ff3b30;
+  --color-system-yellow: #ffcc00;
+  --color-system-orange: #ff9500;
+  --color-system-teal: #5ac8fa;
+  --color-system-purple: #af52de;
+  --color-system-gray: #8e8e93;
+}
+
+.dark {
+  --color-system-green: #30d158;
+  --color-system-red: #ff453a;
+  --color-system-yellow: #ffd60a;
+  --color-system-orange: #ff9f0a;
+  --color-system-teal: #64d2ff;
+  --color-system-purple: #bf5af2;
+  --color-system-gray: #8e8e93;
+}
+
 html,
 body {
   height: 100%;
@@ -24,6 +47,30 @@ body {
   border-radius: 9999px;
   font-size: 1.125rem;
   flex-shrink: 0;
+}
+
+/* Minimalist scrollbar for fixed-height, overflow-scrolling cards (e.g. the leader pop-up) so
+   content can scroll without ever changing the card's own height. */
+.cg-custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 128, 0.5) transparent;
+}
+
+.cg-custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cg-custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cg-custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 120, 128, 0.5);
+  border-radius: 9999px;
+}
+
+.cg-custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 120, 128, 0.75);
 }
 
 /* Header search box: a translucent 5px ring while idle; the same ring rotates through a

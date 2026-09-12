@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { resolveAvatarSrc } from "@/lib/avatar";
 import type { Official } from "@/types";
 
 const ARC_SPAN_DEG = 90; // quarter-circle
@@ -120,21 +121,11 @@ export default function LeaderFanOut({
                 official.role === "governor" ? "border-blue-600" : "border-gray-900 dark:border-gray-200"
               } bg-white dark:bg-gray-800`}
             >
-              {official.photo_url ? (
-                <img
-                  src={official.photo_url}
-                  alt=""
-                  className="h-11 w-11 rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                  {official.name
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((p) => p[0])
-                    .join("")}
-                </span>
-              )}
+              <img
+                src={resolveAvatarSrc(official.name, official.photo_url, 88)}
+                alt=""
+                className="h-11 w-11 rounded-full object-cover"
+              />
             </span>
             {/* Gravity label: never rotated, so it stays horizontal at every arc angle. */}
             <span className="max-w-[6rem] rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-white">

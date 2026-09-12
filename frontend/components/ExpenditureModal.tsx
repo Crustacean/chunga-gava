@@ -11,6 +11,9 @@ interface ExpenditureModalProps {
   project: ExpenditureProject | null;
   onClose: () => void;
   onRatingSubmitted?: () => void;
+  /** Present only when the project's county has a known Governor; renders the "View Owner"
+   * pill that pushes the leader card onto the modal stack in-place. */
+  onViewOwner?: () => void;
 }
 
 const STATUS_LABELS: Record<ExpenditureProject["status"], string> = {
@@ -27,7 +30,7 @@ const STATUS_COLORS: Record<ExpenditureProject["status"], string> = {
   completed: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
 };
 
-export default function ExpenditureModal({ project, onClose, onRatingSubmitted }: ExpenditureModalProps) {
+export default function ExpenditureModal({ project, onClose, onRatingSubmitted, onViewOwner }: ExpenditureModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { tCategory } = useLanguage();
 
@@ -64,11 +67,22 @@ export default function ExpenditureModal({ project, onClose, onRatingSubmitted }
           </form>
         </div>
 
-        <span
-          className={`mb-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[project.status]}`}
-        >
-          {STATUS_LABELS[project.status]}
-        </span>
+        <div className="mb-3 flex items-center gap-2">
+          <span
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[project.status]}`}
+          >
+            {STATUS_LABELS[project.status]}
+          </span>
+          {onViewOwner && (
+            <button
+              type="button"
+              onClick={onViewOwner}
+              className="rounded-full bg-systemOrange px-2.5 py-0.5 text-xs font-bold text-white"
+            >
+              View Owner
+            </button>
+          )}
+        </div>
 
         {project.description && (
           <p className="mb-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{project.description}</p>

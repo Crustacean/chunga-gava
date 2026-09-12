@@ -22,6 +22,22 @@ export interface Official {
   manifesto_items: ManifestoItem[];
 }
 
+export interface VoteStatus {
+  voted: boolean;
+}
+
+export interface OfficialInsights {
+  ai_summary: string;
+  approval_pct: number;
+  disapproval_pct: number;
+  approval_count: number;
+  disapproval_count: number;
+  total_ratings: number;
+  county_budget_allocated: number;
+  county_budget_spent: number;
+  county_expenditure_pct: number;
+}
+
 export interface Amenity {
   id: number;
   name: string;

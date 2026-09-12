@@ -19,7 +19,8 @@ spec:
     spec:
       containers:
         - name: minio
-          image: minio/minio:latest
+          # Docker Hub's minio/minio repo was retired; the official image now lives on quay.io.
+          image: quay.io/minio/minio:latest
           args: ["server", "/data", "--console-address", ":9001"]
           ports:
             - containerPort: 9000

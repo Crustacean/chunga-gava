@@ -18,6 +18,30 @@ FREQUENCY_PHRASE = {
 }
 
 
+def has_voted(
+    db: Session,
+    fingerprint_hash: str,
+    target_id: int,
+    rating_type: str,
+    frequency: ReportFrequency = ReportFrequency.WEEKLY,
+) -> bool:
+    """Read-only check (no side effects, unlike register_vote_or_409) of whether this
+    fingerprint already has a vote for this target+rating_type within the current epoch -
+    used to gate analytics visibility (anti-bias rating gate) before any vote is submitted."""
+    epoch_start = current_epoch_start(frequency)
+    return (
+        db.query(Vote)
+        .filter(
+            Vote.fingerprint_hash == fingerprint_hash,
+            Vote.target_id == target_id,
+            Vote.rating_type == rating_type,
+            Vote.created_at >= epoch_start,
+        )
+        .first()
+        is not None
+    )
+
+
 def register_vote_or_409(
     db: Session,
     fingerprint_hash: str,
@@ -32,18 +56,7 @@ def register_vote_or_409(
     not a one-size-fits-all block); otherwise stages a new Vote row on `db` (added but not
     committed - the caller commits it alongside its own insert so both succeed or both roll
     back together)."""
-    epoch_start = current_epoch_start(frequency)
-    existing = (
-        db.query(Vote)
-        .filter(
-            Vote.fingerprint_hash == fingerprint_hash,
-            Vote.target_id == target_id,
-            Vote.rating_type == rating_type,
-            Vote.created_at >= epoch_start,
-        )
-        .first()
-    )
-    if existing:
+    if has_voted(db, fingerprint_hash, target_id, rating_type, frequency):
         period = FREQUENCY_PHRASE.get(frequency, "this cycle")
         raise HTTPException(status_code=409, detail=f"You have a recorded vote for {label} {period}.")
     db.add(Vote(fingerprint_hash=fingerprint_hash, target_id=target_id, rating_type=rating_type))

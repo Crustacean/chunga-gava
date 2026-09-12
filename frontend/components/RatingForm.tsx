@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "@/lib/api";
 import { getFingerprintHash } from "@/lib/fingerprint";
 import { getVoterId } from "@/lib/voterId";
@@ -11,16 +11,25 @@ interface RatingFormProps {
   targetId: number;
   manifestoItemId?: number;
   onSubmitted?: () => void;
+  /** Bump this value (e.g. Date.now()) to imperatively focus the comment textbox - used by the
+   * anti-bias vote prompt so a citizen's cursor lands directly in the comment field instead of
+   * on the star rating, reducing anchoring bias toward whatever star they click first. */
+  focusSignal?: number;
 }
 
 const SUBMIT_TIMEOUT_MS = 15000;
 
-export default function RatingForm({ targetType, targetId, manifestoItemId, onSubmitted }: RatingFormProps) {
+export default function RatingForm({ targetType, targetId, manifestoItemId, onSubmitted, focusSignal }: RatingFormProps) {
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const commentRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (focusSignal) commentRef.current?.focus();
+  }, [focusSignal]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +95,7 @@ export default function RatingForm({ targetType, targetId, manifestoItemId, onSu
         </label>
         <textarea
           id="comment"
+          ref={commentRef}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={2}

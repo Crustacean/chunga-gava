@@ -2,6 +2,7 @@
 
 import { MarkerClusterer, type Cluster, type Renderer } from "@googlemaps/markerclusterer";
 import { useEffect, useRef } from "react";
+import { resolveAvatarSrc } from "@/lib/avatar";
 import type { Official } from "@/types";
 
 // `clusters` is protected on the base class; subclassing is the sanctioned way to read the
@@ -25,11 +26,14 @@ function buildLeaderIcon(official: Official): google.maps.Icon {
   const r = size / 2;
   const imgR = r - 4;
   const border = official.role === "governor" ? GOVERNOR_BORDER : MCA_BORDER;
-  const photo = official.photo_url ? escapeForSvg(official.photo_url) : "";
+  // Always resolves to something renderable with zero network round-trip for the common case
+  // (a locally-generated initials avatar) - a remote photo embedded here would otherwise race
+  // Maps' synchronous icon rasterization and often render as permanently blank.
+  const photo = escapeForSvg(resolveAvatarSrc(official.name, official.photo_url, imgR * 2));
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     <defs><clipPath id="clip"><circle cx="${r}" cy="${r}" r="${imgR}"/></clipPath></defs>
     <circle cx="${r}" cy="${r}" r="${r - 1.5}" fill="#e5e7eb" stroke="${border}" stroke-width="3"/>
-    ${photo ? `<image href="${photo}" x="${r - imgR}" y="${r - imgR}" width="${imgR * 2}" height="${imgR * 2}" clip-path="url(#clip)" preserveAspectRatio="xMidYMid slice"/>` : ""}
+    <image href="${photo}" x="${r - imgR}" y="${r - imgR}" width="${imgR * 2}" height="${imgR * 2}" clip-path="url(#clip)" preserveAspectRatio="xMidYMid slice"/>
   </svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,

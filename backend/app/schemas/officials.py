@@ -51,3 +51,19 @@ class OfficialOut(BaseModel):
     lng: float
     report_frequency: ReportFrequency
     manifesto_items: list[ManifestoItemOut] = []
+
+
+class VoteStatusOut(BaseModel):
+    voted: bool
+
+
+class OfficialInsightsOut(BaseModel):
+    ai_summary: str
+    approval_pct: float
+    disapproval_pct: float
+    approval_count: int
+    disapproval_count: int
+    total_ratings: int
+    county_budget_allocated: float
+    county_budget_spent: float
+    county_expenditure_pct: float

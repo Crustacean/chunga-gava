@@ -60,6 +60,10 @@ export default function MapView() {
   const [activeExpenditureFilters, setActiveExpenditureFilters] = useState<string[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectDetail, setProjectDetail] = useState<ExpenditureProject | null>(null);
+  // Modal-stack navigation: when "View Owner" is clicked from an expenditure card, this
+  // remembers which project to pop back to when the governor card's X is clicked, without
+  // touching the map (no pan/zoom) or losing the originating card's place in the stack.
+  const [viewingOwnerOfProjectId, setViewingOwnerOfProjectId] = useState<number | null>(null);
   const [defaultZoom, setDefaultZoom] = useState<number | null>(null);
   const clustererRef = useRef<TrackableMarkerClusterer | null>(null);
   const markerToOfficialRef = useRef<Map<google.maps.Marker, Official>>(new Map());
@@ -149,6 +153,33 @@ export default function MapView() {
     setReviewAnchor(null);
     setSelectedOfficial(official);
   }, []);
+
+  // Pushes the county Governor's leader card onto the modal stack in-place, over the
+  // currently open Expenditure card - no map pan/zoom/layer change, and the Expenditure card
+  // is restored (not lost) when the leader card's X is closed.
+  const handleViewOwner = useCallback(
+    (project: ExpenditureProject) => {
+      const governor = officials.find((o) => o.role === "governor" && o.county === project.county);
+      if (!governor) return;
+      setViewingOwnerOfProjectId(project.id);
+      setReviewAnchor(null);
+      setSelectedOfficial(governor);
+      setSelectedProjectId(null);
+    },
+    [officials]
+  );
+
+  const handleCloseLeaderCard = useCallback(() => {
+    if (viewingOwnerOfProjectId != null) {
+      const returnToProjectId = viewingOwnerOfProjectId;
+      setSelectedOfficial(null);
+      setViewingOwnerOfProjectId(null);
+      setSelectedProjectId(returnToProjectId);
+      return;
+    }
+    setSelectedOfficial(null);
+    setReviewAnchor(null);
+  }, [viewingOwnerOfProjectId]);
 
   // Re-clicking the same cluster plays the normal reverse-collapse animation; clicking a
   // different one replaces it outright (it gets a fresh mount/open animation via its key).
@@ -368,10 +399,7 @@ export default function MapView() {
       <ManifestoModal
         official={selectedOfficial}
         anchor={reviewAnchor}
-        onClose={() => {
-          setSelectedOfficial(null);
-          setReviewAnchor(null);
-        }}
+        onClose={handleCloseLeaderCard}
       />
       {fanOut && (
         <LeaderFanOut
@@ -393,6 +421,11 @@ export default function MapView() {
         project={projectDetail}
         onClose={() => setSelectedProjectId(null)}
         onRatingSubmitted={refetchProjectDetail}
+        onViewOwner={
+          projectDetail && officials.some((o) => o.role === "governor" && o.county === projectDetail.county)
+            ? () => handleViewOwner(projectDetail)
+            : undefined
+        }
       />
     </div>
   );
