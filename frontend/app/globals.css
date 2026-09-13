@@ -13,6 +13,13 @@
   --color-system-teal: #5ac8fa;
   --color-system-purple: #af52de;
   --color-system-gray: #8e8e93;
+  --color-system-blue: #007aff;
+  --color-system-background: #ffffff;
+  --color-secondary-system-background: #f2f2f7;
+  --color-tertiary-system-background: #ffffff;
+  --color-label: #000000;
+  --color-secondary-label: rgba(60, 60, 67, 0.6);
+  --color-separator: #c6c6c8;
 }
 
 .dark {
@@ -23,6 +30,13 @@
   --color-system-teal: #64d2ff;
   --color-system-purple: #bf5af2;
   --color-system-gray: #8e8e93;
+  --color-system-blue: #0a84ff;
+  --color-system-background: #000000;
+  --color-secondary-system-background: #1c1c1e;
+  --color-tertiary-system-background: #2c2c2e;
+  --color-label: #ffffff;
+  --color-secondary-label: rgba(235, 235, 245, 0.6);
+  --color-separator: #38383a;
 }
 
 html,
@@ -71,6 +85,26 @@ body {
 
 .cg-custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(120, 120, 128, 0.75);
+}
+
+/* Admin portal form controls (text inputs, textareas, selects) - explicit HIG background/text/
+   border tokens so typed text and placeholders stay legible in both themes (native form control
+   backgrounds don't automatically follow the app's `.dark` class). */
+.cg-input {
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-separator);
+  background-color: var(--color-secondary-system-background);
+  color: var(--color-label);
+}
+
+.cg-input::placeholder {
+  color: var(--color-secondary-label);
+}
+
+.cg-input:focus {
+  outline: none;
+  border-color: var(--color-system-blue);
+  box-shadow: 0 0 0 2px var(--color-system-blue);
 }
 
 /* Header search box: a translucent 5px ring while idle; the same ring rotates through a

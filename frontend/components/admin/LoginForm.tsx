@@ -35,14 +35,14 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         placeholder="Username"
-        className="w-full rounded border border-gray-300 p-2 text-sm"
+        className="w-full cg-input p-2 text-sm"
       />
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
-        className="w-full rounded border border-gray-300 p-2 text-sm"
+        className="w-full cg-input p-2 text-sm"
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button

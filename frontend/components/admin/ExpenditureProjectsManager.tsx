@@ -152,13 +152,13 @@ export default function ExpenditureProjectsManager() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Project name"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           >
             {categories.length === 0 && <option value="">No categories yet</option>}
             {categories.map((c) => (
@@ -171,12 +171,12 @@ export default function ExpenditureProjectsManager() {
             value={county}
             onChange={(e) => setCounty(e.target.value)}
             placeholder="County"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as ExpenditureStatus)}
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -189,26 +189,26 @@ export default function ExpenditureProjectsManager() {
             onChange={(e) => setLat(e.target.value)}
             placeholder="Latitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={lng}
             onChange={(e) => setLng(e.target.value)}
             placeholder="Longitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={specLabel}
             onChange={(e) => setSpecLabel(e.target.value)}
             placeholder="Spec label (e.g. Road Length)"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={specValue}
             onChange={(e) => setSpecValue(e.target.value)}
             placeholder="Spec value (e.g. 42 km)"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={budgetAllocated}
@@ -216,7 +216,7 @@ export default function ExpenditureProjectsManager() {
             placeholder="Budget allocated (KES)"
             type="number"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={budgetSpent}
@@ -224,7 +224,7 @@ export default function ExpenditureProjectsManager() {
             placeholder="Budget spent (KES)"
             type="number"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
         </div>
         <textarea
@@ -232,23 +232,23 @@ export default function ExpenditureProjectsManager() {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description"
           rows={2}
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className="w-full cg-input p-2 text-sm"
         />
 
         <div>
-          <label className="block text-xs font-semibold uppercase text-gray-500">Milestones</label>
+          <label className="block text-xs font-semibold uppercase text-secondaryLabel">Milestones</label>
           {milestones.map((m, idx) => (
             <div key={idx} className="mt-1 grid grid-cols-3 gap-2">
               <input
                 type="date"
                 value={m.date}
                 onChange={(e) => updateMilestone(idx, "date", e.target.value)}
-                className="rounded border border-gray-300 p-2 text-sm"
+                className="cg-input p-2 text-sm"
               />
               <select
                 value={m.milestone}
                 onChange={(e) => updateMilestone(idx, "milestone", e.target.value)}
-                className="rounded border border-gray-300 p-2 text-sm"
+                className="cg-input p-2 text-sm"
               >
                 {MILESTONE_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -260,7 +260,7 @@ export default function ExpenditureProjectsManager() {
                 value={m.note ?? ""}
                 onChange={(e) => updateMilestone(idx, "note", e.target.value)}
                 placeholder="Note (optional)"
-                className="rounded border border-gray-300 p-2 text-sm"
+                className="cg-input p-2 text-sm"
               />
             </div>
           ))}

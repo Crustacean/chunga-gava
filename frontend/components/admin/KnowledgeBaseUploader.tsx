@@ -53,12 +53,12 @@ export default function KnowledgeBaseUploader() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title (e.g. The Constitution of Kenya, 2010)"
           required
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className="w-full cg-input p-2 text-sm"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className="w-full cg-input p-2 text-sm"
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>

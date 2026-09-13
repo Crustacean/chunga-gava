@@ -69,13 +69,13 @@ export default function AmenitiesManager() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Amenity name"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           >
             {serviceClasses.length === 0 && <option value="">No service classes yet</option>}
             {serviceClasses.map((sc) => (
@@ -88,21 +88,21 @@ export default function AmenitiesManager() {
             value={county}
             onChange={(e) => setCounty(e.target.value)}
             placeholder="County"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={lat}
             onChange={(e) => setLat(e.target.value)}
             placeholder="Latitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={lng}
             onChange={(e) => setLng(e.target.value)}
             placeholder="Longitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
         </div>
         <textarea
@@ -111,7 +111,7 @@ export default function AmenitiesManager() {
           placeholder="Public access requirements (e.g. documents needed, fees, hours)"
           rows={3}
           required
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className="w-full cg-input p-2 text-sm"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" className="rounded bg-kenya-green px-4 py-2 text-sm font-semibold text-white">

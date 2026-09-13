@@ -59,14 +59,14 @@ export default function ServiceClassesManager() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Class name (e.g. Water Points)"
           required
-          className="w-full rounded border border-gray-300 p-2 text-sm"
+          className="w-full cg-input p-2 text-sm"
         />
         <div>
-          <label className="block text-xs font-semibold uppercase text-gray-500">Pin color</label>
+          <label className="block text-xs font-semibold uppercase text-secondaryLabel">Pin color</label>
           <select
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 p-2 text-sm"
+            className="mt-1 w-full cg-input p-2 text-sm"
           >
             {COLOR_PALETTE.map((c) => (
               <option key={c.value} value={c.value}>
@@ -108,7 +108,7 @@ export default function ServiceClassesManager() {
                   <select
                     value={serviceClass.color}
                     onChange={(e) => updateColor(serviceClass, e.target.value)}
-                    className="rounded border border-gray-300 p-1 text-xs"
+                    className="cg-input p-1 text-xs"
                   >
                     {COLOR_PALETTE.map((c) => (
                       <option key={c.value} value={c.value}>

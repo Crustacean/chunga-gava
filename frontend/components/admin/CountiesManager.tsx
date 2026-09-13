@@ -49,7 +49,7 @@ export default function CountiesManager() {
                     if (e.target.value !== county.emoji) updateEmoji(county, e.target.value);
                   }}
                   maxLength={8}
-                  className="w-16 rounded border border-gray-300 p-1 text-center text-lg dark:border-gray-600 dark:bg-gray-800"
+                  className="w-16 cg-input p-1 text-center text-lg"
                 />
               </td>
             </tr>
