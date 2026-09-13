@@ -76,6 +76,12 @@ export default function MapView() {
   const clustererRef = useRef<TrackableMarkerClusterer | null>(null);
   const markerToOfficialRef = useRef<Map<google.maps.Marker, Official>>(new Map());
   const projectorRef = useRef<PixelProjector | null>(null);
+  // Idempotency guard (TASK.md line 721): the county id the camera has ACTUALLY animated to,
+  // independent of `selectionSource` - so re-selecting the same county from a *different*
+  // control (which still legitimately updates selectionSource/activeQuickJumpPill/the URL) does
+  // not replay the pan/zoom sequence. `undefined` = camera hasn't moved yet, distinct from
+  // `null` = Countrywide, so the very first hydration/selection always still runs once.
+  const activeCountyIdRef = useRef<number | null | undefined>(undefined);
 
   useEffect(() => {
     api.get<Official[]>("/api/officials").then(setOfficials).catch(() => setOfficials([]));
@@ -313,6 +319,13 @@ export default function MapView() {
   // from firing an unwanted fitBounds on a plain fresh page load with no county selected yet.
   useEffect(() => {
     if (!map || selectionSource === "INITIAL_LOAD") return;
+    // Idempotency guard: `selectionSource` (and thus this effect) legitimately re-fires when
+    // the *other* control re-selects the same county already active, but the camera itself
+    // must stay a no-op in that case - compare against the last county actually animated to
+    // instead of trusting the effect re-running as a signal that a new camera move is needed.
+    const requestedCountyId = selectedCounty?.id ?? null;
+    if (activeCountyIdRef.current === requestedCountyId) return;
+    activeCountyIdRef.current = requestedCountyId;
     if (selectedCounty) {
       cinematicPanAndZoom({
         map,
