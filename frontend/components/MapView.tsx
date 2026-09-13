@@ -8,6 +8,7 @@ import LeaderFanOut from "@/components/LeaderFanOut";
 import LeadersLayer, { type TrackableMarkerClusterer } from "@/components/LeadersLayer";
 import ManifestoModal from "@/components/ManifestoModal";
 import MapLegend from "@/components/MapLegend";
+import QuickJumpStrip from "@/components/QuickJumpStrip";
 import { api } from "@/lib/api";
 import { DARK_MAP_STYLE } from "@/lib/darkMapStyle";
 import {
@@ -293,6 +294,19 @@ export default function MapView() {
     [expenditureCategories]
   );
 
+  // Legend "layer count" badges - live counts of every currently-loaded pin per category name.
+  const serviceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const amenity of amenities) counts[amenity.category] = (counts[amenity.category] ?? 0) + 1;
+    return counts;
+  }, [amenities]);
+
+  const expenditureCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const project of expenditureProjects) counts[project.category] = (counts[project.category] ?? 0) + 1;
+    return counts;
+  }, [expenditureProjects]);
+
   // Header "Location" dropdown selections are relayed here via context since the dropdown
   // itself lives outside this component's tree.
   useEffect(() => {
@@ -365,7 +379,11 @@ export default function MapView() {
                 <MarkerF
                   key={amenity.id}
                   position={{ lat: amenity.lat, lng: amenity.lng }}
-                  icon={buildServicePinIcon(colorByCategory.get(amenity.category) ?? DEFAULT_SERVICE_COLOR)}
+                  icon={buildServicePinIcon(
+                    colorByCategory.get(amenity.category) ?? DEFAULT_SERVICE_COLOR,
+                    "\ud83d\udccd",
+                    amenity.category
+                  )}
                   onClick={() => setSelectedAmenityId(amenity.id)}
                 />
               ))}
@@ -401,6 +419,7 @@ export default function MapView() {
           serviceClasses={serviceClasses}
           activeFilters={activeServiceFilters}
           onToggle={toggleServiceFilter}
+          counts={serviceCounts}
         />
       )}
       {layer === "expenditure" && (
@@ -408,8 +427,10 @@ export default function MapView() {
           serviceClasses={expenditureCategories}
           activeFilters={activeExpenditureFilters}
           onToggle={toggleExpenditureFilter}
+          counts={expenditureCounts}
         />
       )}
+      <QuickJumpStrip />
 
       <ManifestoModal
         official={selectedOfficial}

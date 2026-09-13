@@ -32,7 +32,11 @@ type TranslationKey =
   | "mapKey"
   | "askChungaGava"
   | "thinking"
-  | "signOut";
+  | "signOut"
+  | "toggleLayer"
+  | "mapProjection"
+  | "synced"
+  | "quickJump";
 
 const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
   en: {
@@ -51,6 +55,10 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Ask Chunga Gava",
     thinking: "Thinking...",
     signOut: "Sign out",
+    toggleLayer: "Toggle Layer",
+    mapProjection: "Map Projection",
+    synced: "Synced",
+    quickJump: "Quick Jump",
   },
   sw: {
     askAnything: "Uliza chochote",
@@ -68,6 +76,10 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Uliza Chunga Gava",
     thinking: "Inafikiri...",
     signOut: "Toka",
+    toggleLayer: "Badilisha Tabaka",
+    mapProjection: "Mchoro wa Ramani",
+    synced: "Imesawazishwa",
+    quickJump: "Ruka Haraka",
   },
   fr: {
     askAnything: "Posez une question",
@@ -85,6 +97,10 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Demander à Chunga Gava",
     thinking: "Réflexion...",
     signOut: "Déconnexion",
+    toggleLayer: "Changer de couche",
+    mapProjection: "Projection cartographique",
+    synced: "Synchronisé",
+    quickJump: "Accès rapide",
   },
   ar: {
     askAnything: "اسأل أي شيء",
@@ -102,6 +118,10 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "اسأل تشونغا غافا",
     thinking: "يفكر...",
     signOut: "تسجيل الخروج",
+    toggleLayer: "تبديل الطبقة",
+    mapProjection: "إسقاط الخريطة",
+    synced: "متزامن",
+    quickJump: "الانتقال السريع",
   },
   so: {
     askAnything: "Wax kasta weydii",
@@ -119,6 +139,10 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Weydii Chunga Gava",
     thinking: "Fikirid...",
     signOut: "Ka bax",
+    toggleLayer: "Beddel Lakabka",
+    mapProjection: "Muuqaalka Khariidada",
+    synced: "La isku waafajiyay",
+    quickJump: "Booda Degdegga ah",
   },
 };
 
