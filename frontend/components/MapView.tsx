@@ -52,7 +52,7 @@ function officialsSignature(list: Official[]): string {
 
 export default function MapView() {
   const { theme } = useTheme();
-  const { layer, countyRequest } = useMapFilters();
+  const { layer, selectedCounty, selectionSource } = useMapFilters();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [officials, setOfficials] = useState<Official[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
@@ -307,21 +307,23 @@ export default function MapView() {
     return counts;
   }, [expenditureProjects]);
 
-  // Header "Location" dropdown selections are relayed here via context since the dropdown
-  // itself lives outside this component's tree.
+  // Header "Location" dropdown / Quick Jump strip selections are relayed here via the shared
+  // selectedCounty (single source of truth, TASK.md line 695) since both live outside this
+  // component's tree. Skipping while selectionSource is still INITIAL_LOAD is what stops this
+  // from firing an unwanted fitBounds on a plain fresh page load with no county selected yet.
   useEffect(() => {
-    if (!map || !countyRequest) return;
-    if (countyRequest.county) {
+    if (!map || selectionSource === "INITIAL_LOAD") return;
+    if (selectedCounty) {
       cinematicPanAndZoom({
         map,
-        target: { lat: countyRequest.county.lat, lng: countyRequest.county.lng },
+        target: { lat: selectedCounty.lat, lng: selectedCounty.lng },
         defaultZoom: defaultZoom ?? 6,
         speedMs: ZOOM_SPEED_MS,
       });
     } else {
       map.fitBounds(KENYA_BOUNDS);
     }
-  }, [countyRequest, map, defaultZoom]);
+  }, [selectedCounty, selectionSource, map, defaultZoom]);
 
   // Empty filter = show every pin; otherwise show only the selected classes (multi-select).
   const toggleServiceFilter = useCallback((name: string) => {

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { useMapFilters } from "@/lib/mapFilters";
 import type { County } from "@/types";
@@ -10,22 +9,12 @@ import type { County } from "@/types";
  * (invisible/header-matching for "Countrywide", red once a specific county is selected). */
 export default function LocationDropdown() {
   const { t } = useLanguage();
-  const { requestCounty } = useMapFilters();
-  const [counties, setCounties] = useState<County[]>([]);
-  const [selected, setSelected] = useState<County | null>(null);
+  const { counties, selectedCounty, selectCountyFromDropdown } = useMapFilters();
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    api.get<County[]>("/api/counties").then(setCounties).catch(() => setCounties([]));
-  }, []);
 
   function handleSelect(county: County | null) {
     setIsOpen(false);
-    // Exact-match guard: re-selecting the already-active county would otherwise re-run
-    // the full cinematic pan/zoom for no reason.
-    if (selected?.id === county?.id) return;
-    setSelected(county);
-    requestCounty(county);
+    selectCountyFromDropdown(county);
   }
 
   return (
@@ -35,12 +24,12 @@ export default function LocationDropdown() {
         onClick={() => setIsOpen((v) => !v)}
         onBlur={() => window.setTimeout(() => setIsOpen(false), 150)}
         className={`flex w-full items-center justify-between gap-1.5 border-b-[5px] px-2 py-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100 ${
-          selected ? "border-kenya-red" : "border-white dark:border-gray-900"
+          selectedCounty ? "border-kenya-red" : "border-white dark:border-gray-900"
         }`}
       >
-        {selected ? (
+        {selectedCounty ? (
           <span className="flex items-center gap-1.5">
-            <span aria-hidden="true">{selected.emoji}</span> {selected.name}
+            <span aria-hidden="true">{selectedCounty.emoji}</span> {selectedCounty.name}
           </span>
         ) : (
           <span>{t("countrywide")}</span>

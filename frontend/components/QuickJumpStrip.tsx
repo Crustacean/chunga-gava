@@ -8,12 +8,14 @@ import { useVotesCache } from "@/lib/votesCache";
 import type { County } from "@/types";
 
 /** Floating bottom-left pill strip suggesting up to 5 counties (AI-scored backend endpoint,
- * see GET /api/counties/quick-jump) - clicking a chip reuses the exact same requestCounty()
- * flow as the header's Location dropdown, so it gets the identical GTA5 cinematic pan/zoom
- * camera transition for free (see lib/mapZoom.ts / MapView.tsx's countyRequest effect). */
+ * see GET /api/counties/quick-jump) - clicking a chip reuses the exact same
+ * selectCountyFromQuickJump() flow the header's Location dropdown also feeds into, so it gets
+ * the identical GTA5 cinematic pan/zoom camera transition for free (see lib/mapZoom.ts /
+ * MapView.tsx's selectedCounty effect). `activeQuickJumpPill`/`quickJumpRefreshToken` are the
+ * unified sync state from lib/mapFilters.tsx (TASK.md line 695). */
 export default function QuickJumpStrip() {
   const { t } = useLanguage();
-  const { requestCounty, countyRequest } = useMapFilters();
+  const { selectCountyFromQuickJump, activeQuickJumpPill, quickJumpRefreshToken } = useMapFilters();
   const { fingerprintHash } = useVotesCache();
   const [suggestions, setSuggestions] = useState<County[]>([]);
 
@@ -23,7 +25,7 @@ export default function QuickJumpStrip() {
       .get<County[]>(`/api/counties/quick-jump${query}`)
       .then(setSuggestions)
       .catch(() => setSuggestions([]));
-  }, [fingerprintHash]);
+  }, [fingerprintHash, quickJumpRefreshToken]);
 
   if (suggestions.length === 0) return null;
 
@@ -41,12 +43,12 @@ export default function QuickJumpStrip() {
       <span className="font-bold text-gray-700 dark:text-gray-200">{t("quickJump")}:</span>
       <div className="flex items-center gap-1.5">
         {suggestions.map((county) => {
-          const isActive = countyRequest?.county?.id === county.id;
+          const isActive = activeQuickJumpPill === county.id;
           return (
             <button
               key={county.id}
               type="button"
-              onClick={() => requestCounty(county)}
+              onClick={() => selectCountyFromQuickJump(county)}
               className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
                 isActive
                   ? "border-systemGreen bg-systemGreen/10 text-systemGreen"
