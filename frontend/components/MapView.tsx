@@ -10,7 +10,13 @@ import ManifestoModal from "@/components/ManifestoModal";
 import MapLegend from "@/components/MapLegend";
 import { api } from "@/lib/api";
 import { DARK_MAP_STYLE } from "@/lib/darkMapStyle";
-import { computeCollisionFreeRadius, computeZoomAdjustedRadius, isOverlappingParent } from "@/lib/fanOutLayout";
+import {
+  computeZoomAdjustedRadius,
+  isOverlappingParent,
+  MAX_NODES,
+  MIN_RADIUS_PX,
+  wouldArcNodesOverlap,
+} from "@/lib/fanOutLayout";
 import { buildServicePinIcon, DEFAULT_SERVICE_COLOR } from "@/lib/mapIcons";
 import { useMapFilters } from "@/lib/mapFilters";
 import { createPixelProjector, type PixelProjector } from "@/lib/mapProjection";
@@ -32,6 +38,7 @@ interface FanOutState {
   baseRadius: number;
   zoomAtOpen: number;
   radius: number;
+  layoutMode: "arc" | "radial";
   forceCollapse: boolean;
 }
 
@@ -192,7 +199,13 @@ export default function MapView() {
           return { ...prev, forceCollapse: true };
         }
         const zoomAtOpen = map?.getZoom() ?? 6;
-        const baseRadius = computeCollisionFreeRadius(clustered.length);
+        // Fixed anchored radius (never grown per cluster size - see TASK.md line 607). Default
+        // to the quarter-circle arc; only fall back to the full 360deg radial spread if that
+        // arc would actually pack this many nodes tightly enough to overlap at this radius.
+        const baseRadius = MIN_RADIUS_PX;
+        const layoutMode = wouldArcNodesOverlap(Math.min(clustered.length, MAX_NODES), baseRadius)
+          ? "radial"
+          : "arc";
         return {
           officials: clustered,
           signature,
@@ -201,6 +214,7 @@ export default function MapView() {
           baseRadius,
           zoomAtOpen,
           radius: baseRadius,
+          layoutMode,
           forceCollapse: false,
         };
       });
@@ -408,6 +422,7 @@ export default function MapView() {
           officials={fanOut.officials}
           origin={fanOut.origin}
           radius={fanOut.radius}
+          layout={fanOut.layoutMode}
           forceCollapse={fanOut.forceCollapse}
           onSelectLeader={handleSelectLeaderFromFanOut}
           onCollapse={() => setFanOut(null)}
