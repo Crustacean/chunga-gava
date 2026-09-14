@@ -98,7 +98,7 @@ def seed() -> None:
         db.flush()
 
         created_amenities = 0
-        for county_name, _emoji, lat, lng in COUNTIES:
+        for county_name, _emoji, _tagline, lat, lng in COUNTIES:
             for name, category, a_lat, a_lng, access in _amenities_for_county(county_name, lat, lng):
                 if db.query(Amenity).filter(Amenity.name == name).first():
                     continue

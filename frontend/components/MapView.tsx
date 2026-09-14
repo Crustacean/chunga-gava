@@ -52,8 +52,9 @@ function officialsSignature(list: Official[]): string {
 
 export default function MapView() {
   const { theme } = useTheme();
-  const { layer, selectedCounty, selectionSource } = useMapFilters();
+  const { layer, selectedCounty, selectionSource, setLayerCounts } = useMapFilters();
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [mapBounds, setMapBounds] = useState<google.maps.LatLngBounds | null>(null);
   const [officials, setOfficials] = useState<Official[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [serviceClasses, setServiceClasses] = useState<ServiceClass[]>([]);
@@ -153,6 +154,19 @@ export default function MapView() {
       projector.destroy();
       projectorRef.current = null;
     };
+  }, [map]);
+
+  // Feeds the header dropdown's viewport-count pill (TASK.md line 744) - `bounds_changed` fires
+  // continuously during a drag/zoom gesture (not just once it settles), matching the task's
+  // "updates dynamically on map pan/zoom" requirement.
+  useEffect(() => {
+    if (!map) return;
+    function updateBounds() {
+      setMapBounds(map!.getBounds() ?? null);
+    }
+    updateBounds();
+    const listener = map.addListener("bounds_changed", updateBounds);
+    return () => listener.remove();
   }, [map]);
 
   const handleClustererReady = useCallback(
@@ -312,6 +326,28 @@ export default function MapView() {
     for (const project of expenditureProjects) counts[project.category] = (counts[project.category] ?? 0) + 1;
     return counts;
   }, [expenditureProjects]);
+
+  // Header dropdown notification pills (TASK.md line 744): "total" = how many of the active
+  // layer's items fall within the current county selection (or nationwide if Countrywide);
+  // "viewport" = that same set further narrowed to what's actually inside the map's visible
+  // bounds right now. Deliberately ignores the legend's activeService/ExpenditureFilters - those
+  // are a separate, transient "hide some pins" toggle, not part of "what's available".
+  const scopedLayerItems = useMemo(() => {
+    const items: { lat: number; lng: number; county: string | null }[] =
+      layer === "leaders" ? officials : layer === "services" ? amenities : expenditureProjects;
+    return selectedCounty ? items.filter((item) => item.county === selectedCounty.name) : items;
+  }, [layer, officials, amenities, expenditureProjects, selectedCounty]);
+
+  const totalItemCount = scopedLayerItems.length;
+
+  const viewportItemCount = useMemo(() => {
+    if (!mapBounds) return totalItemCount;
+    return scopedLayerItems.filter((item) => mapBounds.contains({ lat: item.lat, lng: item.lng })).length;
+  }, [scopedLayerItems, mapBounds, totalItemCount]);
+
+  useEffect(() => {
+    setLayerCounts({ viewport: viewportItemCount, total: totalItemCount });
+  }, [viewportItemCount, totalItemCount, setLayerCounts]);
 
   // Header "Location" dropdown / Quick Jump strip selections are relayed here via the shared
   // selectedCounty (single source of truth, TASK.md line 695) since both live outside this

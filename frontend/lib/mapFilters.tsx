@@ -41,6 +41,12 @@ interface MapFiltersContextValue {
   quickJumpRefreshToken: number;
   selectCountyFromDropdown: (county: County | null) => void;
   selectCountyFromQuickJump: (county: County) => void;
+  /** Live counts for the header dropdown's notification pills (TASK.md line 744) - published
+   * by MapView (which owns the officials/amenities/projects data and the map viewport bounds)
+   * since LocationDropdown lives in the header, outside MapView's own component tree. */
+  viewportItemCount: number;
+  totalItemCount: number;
+  setLayerCounts: (counts: { viewport: number; total: number }) => void;
 }
 
 const MapFiltersContext = createContext<MapFiltersContextValue | null>(null);
@@ -55,6 +61,13 @@ export function MapFiltersProvider({ children }: { children: React.ReactNode }) 
   const [activeQuickJumpPill, setActiveQuickJumpPill] = useState<number | null>(null);
   const [selectionSource, setSelectionSource] = useState<SelectionSource>("INITIAL_LOAD");
   const [quickJumpRefreshToken, setQuickJumpRefreshToken] = useState(0);
+  const [viewportItemCount, setViewportItemCount] = useState(0);
+  const [totalItemCount, setTotalItemCount] = useState(0);
+
+  const setLayerCounts = useCallback(({ viewport, total }: { viewport: number; total: number }) => {
+    setViewportItemCount(viewport);
+    setTotalItemCount(total);
+  }, []);
 
   // Deep-link hydration: resolve a `?county=` query param against the real county list once,
   // on first mount only. Leaving selectionSource at INITIAL_LOAD (and selectedCounty at null)
@@ -106,6 +119,9 @@ export function MapFiltersProvider({ children }: { children: React.ReactNode }) 
         quickJumpRefreshToken,
         selectCountyFromDropdown,
         selectCountyFromQuickJump,
+        viewportItemCount,
+        totalItemCount,
+        setLayerCounts,
       }}
     >
       {children}

@@ -86,7 +86,7 @@ def quick_jump_counties(fingerprint_hash: str | None = None, db: Session = Depen
 
 @router.post("/api/admin/counties", response_model=CountyOut)
 def create_county(payload: CountyCreate, db: Session = Depends(get_db), _admin: str = Depends(require_admin)):
-    county = County(name=payload.name, emoji=payload.emoji, lat=payload.lat, lng=payload.lng)
+    county = County(name=payload.name, emoji=payload.emoji, tagline=payload.tagline, lat=payload.lat, lng=payload.lng)
     db.add(county)
     try:
         db.commit()

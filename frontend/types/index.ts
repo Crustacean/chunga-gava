@@ -81,6 +81,7 @@ export interface County {
   id: number;
   name: string;
   emoji: string;
+  tagline: string;
   lat: number;
   lng: number;
 }

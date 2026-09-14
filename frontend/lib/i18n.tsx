@@ -36,7 +36,9 @@ type TranslationKey =
   | "toggleLayer"
   | "mapProjection"
   | "synced"
-  | "quickJump";
+  | "quickJump"
+  | "countrywideTagline"
+  | "allLabel";
 
 const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
   en: {
@@ -59,6 +61,8 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     mapProjection: "Map Projection",
     synced: "Synced",
     quickJump: "Quick Jump",
+    countrywideTagline: "Every county at once",
+    allLabel: "All",
   },
   sw: {
     askAnything: "Uliza chochote",
@@ -80,6 +84,8 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     mapProjection: "Mchoro wa Ramani",
     synced: "Imesawazishwa",
     quickJump: "Ruka Haraka",
+    countrywideTagline: "Kaunti zote kwa pamoja",
+    allLabel: "Zote",
   },
   fr: {
     askAnything: "Posez une question",
@@ -101,6 +107,8 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     mapProjection: "Projection cartographique",
     synced: "Synchronisé",
     quickJump: "Accès rapide",
+    countrywideTagline: "Tous les comtés à la fois",
+    allLabel: "Tout",
   },
   ar: {
     askAnything: "اسأل أي شيء",
@@ -122,6 +130,8 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     mapProjection: "إسقاط الخريطة",
     synced: "متزامن",
     quickJump: "الانتقال السريع",
+    countrywideTagline: "جميع المقاطعات دفعة واحدة",
+    allLabel: "الكل",
   },
   so: {
     askAnything: "Wax kasta weydii",
@@ -143,6 +153,8 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     mapProjection: "Muuqaalka Khariidada",
     synced: "La isku waafajiyay",
     quickJump: "Booda Degdegga ah",
+    countrywideTagline: "Dhammaan gobollada isku mar",
+    allLabel: "Dhammaan",
   },
 };
 
