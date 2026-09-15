@@ -1,20 +1,22 @@
 // Visual sizing constants shared between layout math and the fan-out's own rendering.
 export const NODE_DIAMETER_PX = 56;
-export const NODE_GAP_PX = 10;
 export const PARENT_ICON_RADIUS_PX = 30;
 export const CHILD_ICON_RADIUS_PX = NODE_DIAMETER_PX / 2;
-export const ARC_SPAN_DEG = 90;
+// Anchored radius for the fan-out - fixed rather than grown per-cluster-size, so dense
+// clusters never fling their icons far from the parent marker (see TASK.md line 607).
 export const MIN_RADIUS_PX = 60;
+export const ARC_SPAN_DEG = 90; // default quarter-circle sweep
+export const MAX_NODES = 8; // keep a huge cluster from producing an unusable, overlapping fan
 
-/** Minimum radius (>= MIN_RADIUS_PX) needed so adjacent fanned-out nodes never overlap,
- * solved directly from the chord-length geometry of N nodes spread across a 90deg arc -
- * equivalent to (but far cheaper than) incrementally growing the radius until it fits. */
-export function computeCollisionFreeRadius(count: number): number {
-  if (count <= 1) return MIN_RADIUS_PX;
-  const stepRad = (ARC_SPAN_DEG / (count - 1) / 180) * Math.PI;
-  const requiredSeparation = NODE_DIAMETER_PX + NODE_GAP_PX;
-  const requiredRadius = requiredSeparation / (2 * Math.sin(stepRad / 2));
-  return Math.max(MIN_RADIUS_PX, Math.ceil(requiredRadius));
+/** Default layout is always the quarter-circle arc; this only returns true when packing
+ * `nodeCount` nodes into that 90deg arc at `radius` would make adjacent icons overlap
+ * (independent of viewport size - a dense cluster can overlap on any screen). Adjacent nodes
+ * are the closest pair on a convex <=180deg arc, so checking their chord distance suffices. */
+export function wouldArcNodesOverlap(nodeCount: number, radius: number): boolean {
+  if (nodeCount <= 1) return false;
+  const stepRad = (ARC_SPAN_DEG / (nodeCount - 1) * Math.PI) / 180;
+  const chordPx = 2 * radius * Math.sin(stepRad / 2);
+  return chordPx < NODE_DIAMETER_PX;
 }
 
 /** Zooming in draws the fan proportionally closer to the parent; zooming out (or staying

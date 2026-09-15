@@ -32,7 +32,13 @@ type TranslationKey =
   | "mapKey"
   | "askChungaGava"
   | "thinking"
-  | "signOut";
+  | "signOut"
+  | "toggleLayer"
+  | "mapProjection"
+  | "synced"
+  | "quickJump"
+  | "countrywideTagline"
+  | "allLabel";
 
 const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
   en: {
@@ -51,6 +57,12 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Ask Chunga Gava",
     thinking: "Thinking...",
     signOut: "Sign out",
+    toggleLayer: "Toggle Layer",
+    mapProjection: "Map Projection",
+    synced: "Synced",
+    quickJump: "Quick Jump",
+    countrywideTagline: "Every county at once",
+    allLabel: "All",
   },
   sw: {
     askAnything: "Uliza chochote",
@@ -68,6 +80,12 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Uliza Chunga Gava",
     thinking: "Inafikiri...",
     signOut: "Toka",
+    toggleLayer: "Badilisha Tabaka",
+    mapProjection: "Mchoro wa Ramani",
+    synced: "Imesawazishwa",
+    quickJump: "Ruka Haraka",
+    countrywideTagline: "Kaunti zote kwa pamoja",
+    allLabel: "Zote",
   },
   fr: {
     askAnything: "Posez une question",
@@ -85,6 +103,12 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Demander à Chunga Gava",
     thinking: "Réflexion...",
     signOut: "Déconnexion",
+    toggleLayer: "Changer de couche",
+    mapProjection: "Projection cartographique",
+    synced: "Synchronisé",
+    quickJump: "Accès rapide",
+    countrywideTagline: "Tous les comtés à la fois",
+    allLabel: "Tout",
   },
   ar: {
     askAnything: "اسأل أي شيء",
@@ -102,6 +126,12 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "اسأل تشونغا غافا",
     thinking: "يفكر...",
     signOut: "تسجيل الخروج",
+    toggleLayer: "تبديل الطبقة",
+    mapProjection: "إسقاط الخريطة",
+    synced: "متزامن",
+    quickJump: "الانتقال السريع",
+    countrywideTagline: "جميع المقاطعات دفعة واحدة",
+    allLabel: "الكل",
   },
   so: {
     askAnything: "Wax kasta weydii",
@@ -119,6 +149,12 @@ const DICTIONARY: Record<string, Record<TranslationKey, string>> = {
     askChungaGava: "Weydii Chunga Gava",
     thinking: "Fikirid...",
     signOut: "Ka bax",
+    toggleLayer: "Beddel Lakabka",
+    mapProjection: "Muuqaalka Khariidada",
+    synced: "La isku waafajiyay",
+    quickJump: "Booda Degdegga ah",
+    countrywideTagline: "Dhammaan gobollada isku mar",
+    allLabel: "Dhammaan",
   },
 };
 

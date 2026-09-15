@@ -16,3 +16,4 @@ minio-data/
 pgdata/
 TASK.md
 .playwright-mcp
+logs

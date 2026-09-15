@@ -83,12 +83,12 @@ export default function OfficialsManager() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Full name"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as OfficialRole)}
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           >
             <option value="governor">Governor</option>
             <option value="mca">MCA</option>
@@ -98,50 +98,50 @@ export default function OfficialsManager() {
             onChange={(e) => setCounty(e.target.value)}
             placeholder="County"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={ward}
             onChange={(e) => setWard(e.target.value)}
             placeholder="Ward (MCA only)"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={lat}
             onChange={(e) => setLat(e.target.value)}
             placeholder="Latitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={lng}
             onChange={(e) => setLng(e.target.value)}
             placeholder="Longitude"
             required
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={contactEmail}
             onChange={(e) => setContactEmail(e.target.value)}
             placeholder="Contact email (for reports)"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
           <input
             value={contactPhone}
             onChange={(e) => setContactPhone(e.target.value)}
             placeholder="Contact phone (for reports)"
-            className="rounded border border-gray-300 p-2 text-sm"
+            className="cg-input p-2 text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase text-gray-500">
+          <label className="block text-xs font-semibold uppercase text-secondaryLabel">
             Report dispatch frequency
           </label>
           <select
             value={reportFrequency}
             onChange={(e) => setReportFrequency(e.target.value as ReportFrequency)}
-            className="mt-1 rounded border border-gray-300 p-2 text-sm"
+            className="mt-1 cg-input p-2 text-sm"
           >
             {FREQUENCIES.map((f) => (
               <option key={f} value={f}>
@@ -152,20 +152,20 @@ export default function OfficialsManager() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase text-gray-500">Manifesto items</label>
+          <label className="block text-xs font-semibold uppercase text-secondaryLabel">Manifesto items</label>
           {manifestoItems.map((item, idx) => (
             <div key={idx} className="mt-1 grid grid-cols-2 gap-2">
               <input
                 value={item.title}
                 onChange={(e) => updateManifestoItem(idx, "title", e.target.value)}
                 placeholder="Item title"
-                className="rounded border border-gray-300 p-2 text-sm"
+                className="cg-input p-2 text-sm"
               />
               <input
                 value={item.description}
                 onChange={(e) => updateManifestoItem(idx, "description", e.target.value)}
                 placeholder="Description"
-                className="rounded border border-gray-300 p-2 text-sm"
+                className="cg-input p-2 text-sm"
               />
             </div>
           ))}
@@ -206,7 +206,7 @@ export default function OfficialsManager() {
                   <select
                     value={o.report_frequency}
                     onChange={(e) => updateFrequency(o, e.target.value as ReportFrequency)}
-                    className="rounded border border-gray-300 p-1 text-xs"
+                    className="cg-input p-1 text-xs"
                   >
                     {FREQUENCIES.map((f) => (
                       <option key={f} value={f}>

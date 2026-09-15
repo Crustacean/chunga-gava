@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import StackedApprovalBar from "@/components/StackedApprovalBar";
+import BudgetDonutChart from "@/components/BudgetDonutChart";
+import PeerComparisonBar from "@/components/PeerComparisonBar";
 import RatingForm from "@/components/RatingForm";
-import type { Official } from "@/types";
+import { api } from "@/lib/api";
+import { resolveAvatarSrc } from "@/lib/avatar";
+import { formatVoteCount } from "@/lib/format";
+import { useVotesCache } from "@/lib/votesCache";
+import type { Official, OfficialInsights } from "@/types";
 
 interface ManifestoModalProps {
   official: Official | null;
@@ -14,7 +21,13 @@ interface ManifestoModalProps {
 
 export default function ManifestoModal({ official, onClose, anchor }: ManifestoModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const overallRatingRef = useRef<HTMLDivElement>(null);
   const [activeItemId, setActiveItemId] = useState<number | null>(null);
+  const [insights, setInsights] = useState<OfficialInsights | null>(null);
+  const [showVotePrompt, setShowVotePrompt] = useState(false);
+  const [focusSignal, setFocusSignal] = useState(0);
+  const { hasVoted, markVoted } = useVotesCache();
+  const voted = official ? hasVoted("official", official.id) : false;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -45,7 +58,31 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
     }
   }, [official, anchor]);
 
+  // Anti-bias rating gate: whether this device's fingerprint has already voted this official's
+  // "overall" score is read straight from the app-boot-warmed cache (see lib/votesCache.tsx) -
+  // instant, no per-open network round trip or loading flash.
+  useEffect(() => {
+    setInsights(null);
+    setShowVotePrompt(false);
+  }, [official]);
+
+  useEffect(() => {
+    if (!official || !voted) return;
+    api
+      .get<OfficialInsights>(`/api/officials/${official.id}/insights`)
+      .then(setInsights)
+      .catch(() => setInsights(null));
+  }, [official, voted]);
+
+  function handleViewRatingClick() {
+    setShowVotePrompt(true);
+    setFocusSignal(Date.now());
+    overallRatingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   if (!official) return null;
+
+  const firstName = official.name.split(" ")[0];
 
   return (
     <dialog
@@ -53,18 +90,16 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
       onClose={onClose}
       className="w-full max-w-lg rounded-lg bg-white p-0 text-gray-900 backdrop:bg-black/50 dark:bg-gray-800 dark:text-gray-100"
     >
-      <div className="max-h-[80vh] overflow-y-auto p-5">
+      <div className="cg-custom-scrollbar max-h-[80vh] overflow-y-auto p-5">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            {official.photo_url && (
-              <img
-                src={official.photo_url}
-                alt={official.name}
-                className={`h-16 w-16 flex-shrink-0 rounded-full border-4 object-cover ${
-                  official.role === "governor" ? "border-blue-600" : "border-gray-900 dark:border-gray-200"
-                }`}
-              />
-            )}
+            <img
+              src={resolveAvatarSrc(official.name, official.photo_url, 128)}
+              alt={official.name}
+              className={`h-16 w-16 flex-shrink-0 rounded-full border-4 object-cover ${
+                official.role === "governor" ? "border-blue-600" : "border-gray-900 dark:border-gray-200"
+              }`}
+            />
             <div>
               <h2 className="text-lg font-bold">{official.name}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -74,11 +109,110 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
             </div>
           </div>
           <form method="dialog">
-            <button aria-label="Close" className="text-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <button
+              aria-label="Close"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-black/5 text-xl leading-none text-gray-400 transition-colors hover:bg-black/10 hover:text-gray-700 dark:bg-white/10 dark:hover:bg-white/20 dark:hover:text-gray-200"
+            >
               &times;
             </button>
           </form>
         </div>
+
+        {voted ? (
+          insights ? (
+            <div className="mb-4 space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300">{insights.ai_summary}</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-center">
+                <div>
+                  <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    Approval ({Math.round(insights.approval_pct)}%, {formatVoteCount(insights.total_ratings)} votes)
+                  </p>
+                  <StackedApprovalBar
+                    approvalPct={insights.approval_pct}
+                    disapprovalPct={insights.disapproval_pct}
+                    approvalCount={insights.approval_count}
+                    disapprovalCount={insights.disapproval_count}
+                  />
+                </div>
+                <BudgetDonutChart
+                  totalAllocated={insights.county_budget_allocated}
+                  totalSpent={insights.county_budget_spent}
+                  expenditurePct={insights.county_expenditure_pct}
+                />
+              </div>
+
+              {official.role === "governor" ? (
+                <PeerComparisonBar
+                  label={`${insights.benchmark_label} Rank`}
+                  nodes={[
+                    {
+                      id: official.id,
+                      name: official.name,
+                      photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                      percentage: insights.approval_pct,
+                      ringColorClass: "ring-blue-600",
+                    },
+                  ]}
+                />
+              ) : (
+                <>
+                  <PeerComparisonBar
+                    label="County MCA Rank"
+                    nodes={[
+                      {
+                        id: official.id,
+                        name: official.name,
+                        photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                        percentage: insights.approval_pct,
+                        ringColorClass: "ring-gray-900 dark:ring-gray-200",
+                      },
+                    ]}
+                  />
+                  {insights.comparison_official && (
+                    <PeerComparisonBar
+                      label={`vs. ${insights.comparison_official.name} (Governor)`}
+                      nodes={[
+                        {
+                          id: official.id,
+                          name: official.name,
+                          photoSrc: resolveAvatarSrc(official.name, official.photo_url, 64),
+                          percentage: insights.approval_pct,
+                          ringColorClass: "ring-gray-900 dark:ring-gray-200",
+                        },
+                        {
+                          id: insights.comparison_official.id,
+                          name: insights.comparison_official.name,
+                          photoSrc: resolveAvatarSrc(
+                            insights.comparison_official.name,
+                            insights.comparison_official.photo_url,
+                            64
+                          ),
+                          percentage: insights.comparison_official.approval_pct,
+                          ringColorClass: "ring-blue-600",
+                        },
+                      ]}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            // Gate already unlocked (instant, from the optimistic cache write) - this only ever
+            // shows for the brief moment while the real insights content is still loading, never
+            // a flash back to the "unvoted" link below.
+            <div className="mb-4 animate-pulse rounded-md border border-gray-200 p-3 text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+              Loading your insights…
+            </div>
+          )
+        ) : (
+          <button
+            type="button"
+            onClick={handleViewRatingClick}
+            className="mb-4 text-sm font-semibold text-kenya-green underline"
+          >
+            View {firstName}&apos;s rating 🙈
+          </button>
+        )}
 
         <h3 className="mb-2 font-semibold">Manifesto</h3>
         {official.manifesto_items.length === 0 && (
@@ -112,7 +246,19 @@ export default function ManifestoModal({ official, onClose, anchor }: ManifestoM
         </ul>
 
         <h3 className="mb-2 mt-4 font-semibold">Rate {official.name} overall</h3>
-        <RatingForm targetType="official" targetId={official.id} />
+        <div ref={overallRatingRef}>
+          {showVotePrompt && !voted && (
+            <p className="mb-2 rounded-md bg-kenya-green/10 p-2 text-xs font-medium text-kenya-green">
+              Cast your vote below to unlock {firstName}&apos;s rating insights.
+            </p>
+          )}
+          <RatingForm
+            targetType="official"
+            targetId={official.id}
+            focusSignal={focusSignal}
+            onSubmitted={() => markVoted("official", official.id)}
+          />
+        </div>
       </div>
     </dialog>
   );

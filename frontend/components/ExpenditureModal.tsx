@@ -11,6 +11,9 @@ interface ExpenditureModalProps {
   project: ExpenditureProject | null;
   onClose: () => void;
   onRatingSubmitted?: () => void;
+  /** Present only when the project's county has a known Governor; renders the "View Owner"
+   * pill that pushes the leader card onto the modal stack in-place. */
+  onViewOwner?: () => void;
 }
 
 const STATUS_LABELS: Record<ExpenditureProject["status"], string> = {
@@ -27,7 +30,7 @@ const STATUS_COLORS: Record<ExpenditureProject["status"], string> = {
   completed: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
 };
 
-export default function ExpenditureModal({ project, onClose, onRatingSubmitted }: ExpenditureModalProps) {
+export default function ExpenditureModal({ project, onClose, onRatingSubmitted, onViewOwner }: ExpenditureModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { tCategory } = useLanguage();
 
@@ -58,17 +61,31 @@ export default function ExpenditureModal({ project, onClose, onRatingSubmitted }
             </p>
           </div>
           <form method="dialog">
-            <button aria-label="Close" className="text-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <button
+              aria-label="Close"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-black/5 text-xl leading-none text-gray-400 transition-colors hover:bg-black/10 hover:text-gray-700 dark:bg-white/10 dark:hover:bg-white/20 dark:hover:text-gray-200"
+            >
               &times;
             </button>
           </form>
         </div>
 
-        <span
-          className={`mb-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[project.status]}`}
-        >
-          {STATUS_LABELS[project.status]}
-        </span>
+        <div className="mb-3 flex items-center gap-2">
+          <span
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[project.status]}`}
+          >
+            {STATUS_LABELS[project.status]}
+          </span>
+          {onViewOwner && (
+            <button
+              type="button"
+              onClick={onViewOwner}
+              className="rounded-full bg-systemOrange px-2.5 py-0.5 text-xs font-bold text-white"
+            >
+              View Owner
+            </button>
+          )}
+        </div>
 
         {project.description && (
           <p className="mb-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{project.description}</p>

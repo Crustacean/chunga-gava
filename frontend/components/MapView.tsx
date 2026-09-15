@@ -8,9 +8,16 @@ import LeaderFanOut from "@/components/LeaderFanOut";
 import LeadersLayer, { type TrackableMarkerClusterer } from "@/components/LeadersLayer";
 import ManifestoModal from "@/components/ManifestoModal";
 import MapLegend from "@/components/MapLegend";
+import QuickJumpStrip from "@/components/QuickJumpStrip";
 import { api } from "@/lib/api";
 import { DARK_MAP_STYLE } from "@/lib/darkMapStyle";
-import { computeCollisionFreeRadius, computeZoomAdjustedRadius, isOverlappingParent } from "@/lib/fanOutLayout";
+import {
+  computeZoomAdjustedRadius,
+  isOverlappingParent,
+  MAX_NODES,
+  MIN_RADIUS_PX,
+  wouldArcNodesOverlap,
+} from "@/lib/fanOutLayout";
 import { buildServicePinIcon, DEFAULT_SERVICE_COLOR } from "@/lib/mapIcons";
 import { useMapFilters } from "@/lib/mapFilters";
 import { createPixelProjector, type PixelProjector } from "@/lib/mapProjection";
@@ -32,6 +39,7 @@ interface FanOutState {
   baseRadius: number;
   zoomAtOpen: number;
   radius: number;
+  layoutMode: "arc" | "radial";
   forceCollapse: boolean;
 }
 
@@ -44,8 +52,9 @@ function officialsSignature(list: Official[]): string {
 
 export default function MapView() {
   const { theme } = useTheme();
-  const { layer, countyRequest } = useMapFilters();
+  const { layer, selectedCounty, selectionSource, setLayerCounts } = useMapFilters();
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [mapBounds, setMapBounds] = useState<google.maps.LatLngBounds | null>(null);
   const [officials, setOfficials] = useState<Official[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [serviceClasses, setServiceClasses] = useState<ServiceClass[]>([]);
@@ -60,10 +69,20 @@ export default function MapView() {
   const [activeExpenditureFilters, setActiveExpenditureFilters] = useState<string[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projectDetail, setProjectDetail] = useState<ExpenditureProject | null>(null);
+  // Modal-stack navigation: when "View Owner" is clicked from an expenditure card, this
+  // remembers which project to pop back to when the governor card's X is clicked, without
+  // touching the map (no pan/zoom) or losing the originating card's place in the stack.
+  const [viewingOwnerOfProjectId, setViewingOwnerOfProjectId] = useState<number | null>(null);
   const [defaultZoom, setDefaultZoom] = useState<number | null>(null);
   const clustererRef = useRef<TrackableMarkerClusterer | null>(null);
   const markerToOfficialRef = useRef<Map<google.maps.Marker, Official>>(new Map());
   const projectorRef = useRef<PixelProjector | null>(null);
+  // Idempotency guard (TASK.md line 721): the county id the camera has ACTUALLY animated to,
+  // independent of `selectionSource` - so re-selecting the same county from a *different*
+  // control (which still legitimately updates selectionSource/activeQuickJumpPill/the URL) does
+  // not replay the pan/zoom sequence. `undefined` = camera hasn't moved yet, distinct from
+  // `null` = Countrywide, so the very first hydration/selection always still runs once.
+  const activeCountyIdRef = useRef<number | null | undefined>(undefined);
 
   useEffect(() => {
     api.get<Official[]>("/api/officials").then(setOfficials).catch(() => setOfficials([]));
@@ -137,6 +156,19 @@ export default function MapView() {
     };
   }, [map]);
 
+  // Feeds the header dropdown's viewport-count pill (TASK.md line 744) - `bounds_changed` fires
+  // continuously during a drag/zoom gesture (not just once it settles), matching the task's
+  // "updates dynamically on map pan/zoom" requirement.
+  useEffect(() => {
+    if (!map) return;
+    function updateBounds() {
+      setMapBounds(map!.getBounds() ?? null);
+    }
+    updateBounds();
+    const listener = map.addListener("bounds_changed", updateBounds);
+    return () => listener.remove();
+  }, [map]);
+
   const handleClustererReady = useCallback(
     (clusterer: TrackableMarkerClusterer | null, markerToOfficial: Map<google.maps.Marker, Official>) => {
       clustererRef.current = clusterer;
@@ -150,6 +182,34 @@ export default function MapView() {
     setSelectedOfficial(official);
   }, []);
 
+  // Pushes the county Governor's leader card onto the modal stack as an overlay directly on
+  // top of the still-open, still-mounted Expenditure card - no map pan/zoom/layer change, and
+  // (critically) selectedProjectId/projectDetail are left untouched so there's nothing to
+  // re-fetch when popping back: the underlying <dialog> was never closed or unmounted, only
+  // visually covered by the leader dialog stacking above it in the browser's native top layer.
+  const handleViewOwner = useCallback(
+    (project: ExpenditureProject) => {
+      const governor = officials.find((o) => o.role === "governor" && o.county === project.county);
+      if (!governor) return;
+      setViewingOwnerOfProjectId(project.id);
+      setReviewAnchor(null);
+      setSelectedOfficial(governor);
+    },
+    [officials]
+  );
+
+  const handleCloseLeaderCard = useCallback(() => {
+    if (viewingOwnerOfProjectId != null) {
+      // Just pop the overlay - selectedProjectId/projectDetail were never changed, so the
+      // Expenditure dialog underneath is already showing, instantly, with no re-fetch.
+      setSelectedOfficial(null);
+      setViewingOwnerOfProjectId(null);
+      return;
+    }
+    setSelectedOfficial(null);
+    setReviewAnchor(null);
+  }, [viewingOwnerOfProjectId]);
+
   // Re-clicking the same cluster plays the normal reverse-collapse animation; clicking a
   // different one replaces it outright (it gets a fresh mount/open animation via its key).
   const handleSelectCluster = useCallback(
@@ -160,7 +220,13 @@ export default function MapView() {
           return { ...prev, forceCollapse: true };
         }
         const zoomAtOpen = map?.getZoom() ?? 6;
-        const baseRadius = computeCollisionFreeRadius(clustered.length);
+        // Fixed anchored radius (never grown per cluster size - see TASK.md line 607). Default
+        // to the quarter-circle arc; only fall back to the full 360deg radial spread if that
+        // arc would actually pack this many nodes tightly enough to overlap at this radius.
+        const baseRadius = MIN_RADIUS_PX;
+        const layoutMode = wouldArcNodesOverlap(Math.min(clustered.length, MAX_NODES), baseRadius)
+          ? "radial"
+          : "arc";
         return {
           officials: clustered,
           signature,
@@ -169,6 +235,7 @@ export default function MapView() {
           baseRadius,
           zoomAtOpen,
           radius: baseRadius,
+          layoutMode,
           forceCollapse: false,
         };
       });
@@ -247,21 +314,65 @@ export default function MapView() {
     [expenditureCategories]
   );
 
-  // Header "Location" dropdown selections are relayed here via context since the dropdown
-  // itself lives outside this component's tree.
+  // Legend "layer count" badges - live counts of every currently-loaded pin per category name.
+  const serviceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const amenity of amenities) counts[amenity.category] = (counts[amenity.category] ?? 0) + 1;
+    return counts;
+  }, [amenities]);
+
+  const expenditureCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const project of expenditureProjects) counts[project.category] = (counts[project.category] ?? 0) + 1;
+    return counts;
+  }, [expenditureProjects]);
+
+  // Header dropdown notification pills (TASK.md line 744): "total" = how many of the active
+  // layer's items fall within the current county selection (or nationwide if Countrywide);
+  // "viewport" = that same set further narrowed to what's actually inside the map's visible
+  // bounds right now. Deliberately ignores the legend's activeService/ExpenditureFilters - those
+  // are a separate, transient "hide some pins" toggle, not part of "what's available".
+  const scopedLayerItems = useMemo(() => {
+    const items: { lat: number; lng: number; county: string | null }[] =
+      layer === "leaders" ? officials : layer === "services" ? amenities : expenditureProjects;
+    return selectedCounty ? items.filter((item) => item.county === selectedCounty.name) : items;
+  }, [layer, officials, amenities, expenditureProjects, selectedCounty]);
+
+  const totalItemCount = scopedLayerItems.length;
+
+  const viewportItemCount = useMemo(() => {
+    if (!mapBounds) return totalItemCount;
+    return scopedLayerItems.filter((item) => mapBounds.contains({ lat: item.lat, lng: item.lng })).length;
+  }, [scopedLayerItems, mapBounds, totalItemCount]);
+
   useEffect(() => {
-    if (!map || !countyRequest) return;
-    if (countyRequest.county) {
+    setLayerCounts({ viewport: viewportItemCount, total: totalItemCount });
+  }, [viewportItemCount, totalItemCount, setLayerCounts]);
+
+  // Header "Location" dropdown / Quick Jump strip selections are relayed here via the shared
+  // selectedCounty (single source of truth, TASK.md line 695) since both live outside this
+  // component's tree. Skipping while selectionSource is still INITIAL_LOAD is what stops this
+  // from firing an unwanted fitBounds on a plain fresh page load with no county selected yet.
+  useEffect(() => {
+    if (!map || selectionSource === "INITIAL_LOAD") return;
+    // Idempotency guard: `selectionSource` (and thus this effect) legitimately re-fires when
+    // the *other* control re-selects the same county already active, but the camera itself
+    // must stay a no-op in that case - compare against the last county actually animated to
+    // instead of trusting the effect re-running as a signal that a new camera move is needed.
+    const requestedCountyId = selectedCounty?.id ?? null;
+    if (activeCountyIdRef.current === requestedCountyId) return;
+    activeCountyIdRef.current = requestedCountyId;
+    if (selectedCounty) {
       cinematicPanAndZoom({
         map,
-        target: { lat: countyRequest.county.lat, lng: countyRequest.county.lng },
+        target: { lat: selectedCounty.lat, lng: selectedCounty.lng },
         defaultZoom: defaultZoom ?? 6,
         speedMs: ZOOM_SPEED_MS,
       });
     } else {
       map.fitBounds(KENYA_BOUNDS);
     }
-  }, [countyRequest, map, defaultZoom]);
+  }, [selectedCounty, selectionSource, map, defaultZoom]);
 
   // Empty filter = show every pin; otherwise show only the selected classes (multi-select).
   const toggleServiceFilter = useCallback((name: string) => {
@@ -319,7 +430,11 @@ export default function MapView() {
                 <MarkerF
                   key={amenity.id}
                   position={{ lat: amenity.lat, lng: amenity.lng }}
-                  icon={buildServicePinIcon(colorByCategory.get(amenity.category) ?? DEFAULT_SERVICE_COLOR)}
+                  icon={buildServicePinIcon(
+                    colorByCategory.get(amenity.category) ?? DEFAULT_SERVICE_COLOR,
+                    "\ud83d\udccd",
+                    amenity.category
+                  )}
                   onClick={() => setSelectedAmenityId(amenity.id)}
                 />
               ))}
@@ -355,6 +470,7 @@ export default function MapView() {
           serviceClasses={serviceClasses}
           activeFilters={activeServiceFilters}
           onToggle={toggleServiceFilter}
+          counts={serviceCounts}
         />
       )}
       {layer === "expenditure" && (
@@ -362,16 +478,15 @@ export default function MapView() {
           serviceClasses={expenditureCategories}
           activeFilters={activeExpenditureFilters}
           onToggle={toggleExpenditureFilter}
+          counts={expenditureCounts}
         />
       )}
+      <QuickJumpStrip />
 
       <ManifestoModal
         official={selectedOfficial}
         anchor={reviewAnchor}
-        onClose={() => {
-          setSelectedOfficial(null);
-          setReviewAnchor(null);
-        }}
+        onClose={handleCloseLeaderCard}
       />
       {fanOut && (
         <LeaderFanOut
@@ -379,6 +494,7 @@ export default function MapView() {
           officials={fanOut.officials}
           origin={fanOut.origin}
           radius={fanOut.radius}
+          layout={fanOut.layoutMode}
           forceCollapse={fanOut.forceCollapse}
           onSelectLeader={handleSelectLeaderFromFanOut}
           onCollapse={() => setFanOut(null)}
@@ -393,6 +509,11 @@ export default function MapView() {
         project={projectDetail}
         onClose={() => setSelectedProjectId(null)}
         onRatingSubmitted={refetchProjectDetail}
+        onViewOwner={
+          projectDetail && officials.some((o) => o.role === "governor" && o.county === projectDetail.county)
+            ? () => handleViewOwner(projectDetail)
+            : undefined
+        }
       />
     </div>
   );

@@ -51,3 +51,35 @@ class OfficialOut(BaseModel):
     lng: float
     report_frequency: ReportFrequency
     manifesto_items: list[ManifestoItemOut] = []
+
+
+class VoteStatusOut(BaseModel):
+    voted: bool
+
+
+class PeerOfficialOut(BaseModel):
+    """A comparison leader (e.g. a county's Governor) shown alongside another official on a
+    peer-benchmark bar."""
+
+    id: int
+    name: str
+    photo_url: str | None
+    approval_pct: float
+
+
+class OfficialInsightsOut(BaseModel):
+    ai_summary: str
+    approval_pct: float
+    disapproval_pct: float
+    approval_count: int
+    disapproval_count: int
+    total_ratings: int
+    county_budget_allocated: float
+    county_budget_spent: float
+    county_expenditure_pct: float
+    # Peer-benchmark bars: "Countrywide" (governors, vs the national governor average) or
+    # "County MCAs" (MCAs, vs the average of other MCAs in the same county).
+    benchmark_label: str
+    benchmark_approval_pct: float
+    # Only populated for MCAs: their county's Governor, for the head-to-head comparison bar.
+    comparison_official: PeerOfficialOut | None = None

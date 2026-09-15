@@ -95,6 +95,10 @@ clickable URL, or run `minikube tunnel` in a separate terminal.
 
 Frontend: `http://<minikube ip>:30300` (NodePort). Backend: `http://<minikube ip>:30800` (NodePort).
 
+The Compose and Kubernetes manifests pin the legacy community MinIO image to
+`RELEASE.2025-09-07T16-13-09Z`. The newer `quay.io/minio/aistor/minio` image requires an AIStor
+license before it permits S3 operations, so it is not a drop-in replacement for this local setup.
+
 `k8s/secret.yaml` is a **template** — replace placeholder values (or, better, create the Secret directly
 with `kubectl create secret generic chungagava-secrets --from-literal=...`) and never commit real
 credentials.
